@@ -1,4 +1,5 @@
 import * as p from "@clack/prompts";
+import rl from "readline";
 
 function validResponse<T>(response: T | symbol): asserts response is T {
   if (p.isCancel(response)) {
@@ -6,23 +7,24 @@ function validResponse<T>(response: T | symbol): asserts response is T {
   }
 }
 
-function fitAsc(code: number): number {
-  const firstCode = "a".charCodeAt(0);
-  const lastCode = "z".charCodeAt(0);
-  return code > lastCode
-    ? code - lastCode + firstCode - 1
-    : code < firstCode
-    ? code + lastCode - firstCode + 1
-    : code;
+function fitAsc(charCode: number): number {
+  const lowercaseA = "a".charCodeAt(0);
+  const lowercaseZ = "z".charCodeAt(0);
+
+  return charCode > lowercaseZ
+    ? charCode - lowercaseZ + lowercaseA
+    : charCode < lowercaseA
+    ? charCode + lowercaseZ - lowercaseA
+    : charCode;
 }
 
 async function encrypt(value: string): Promise<void> {
   const key = await p.text({
-    message: "Insira a chave:",
+    message: "Insert key:",
     initialValue: "5",
     validate(value) {
-      if (/\D/g.test(value)) {
-        return "Chave inválida";
+      if (!value || /\D/g.test(value)) {
+        return "Invalid key";
       }
     },
   });
@@ -44,28 +46,34 @@ async function encrypt(value: string): Promise<void> {
 
 async function decrypt(value: string): Promise<void> {
   let key = 0;
-  let result;
   let repeat;
-  do {
-    key++;
-    result = "";
 
-    for (let i = 0; i < value.length; i++) {
-      if (value[i] === " ") {
-        result += " ";
-        continue;
+  do {
+    key = key % 25;
+    p.log.step(`result: ${key + 1} - ${key + 5}  `);
+    for (let i = 0; i < 5; i++) {
+      key++;
+      let result = "";
+
+      for (let j = 0; j < value.length; j++) {
+        if (value[j] === " ") {
+          result += " ";
+          continue;
+        }
+        const code = fitAsc(value.charCodeAt(j) - key);
+        result += String.fromCharCode(code);
       }
-      const code = fitAsc(value.charCodeAt(i) - key);
-      result += String.fromCharCode(code);
+
+      p.log.info(result);
     }
 
-    p.log.info(result);
     repeat = await p.confirm({
-      message: "Tentar novamente?",
-      active: "sim",
-      inactive: "não",
+      message: "Retry?",
     });
     validResponse(repeat);
+    if (repeat === true) {
+      rl.moveCursor(process.stdout, -999, -15);
+    }
   } while (repeat);
 }
 
@@ -87,6 +95,11 @@ async function decrypt(value: string): Promise<void> {
 
   const value = await p.text({
     message: "Insert a string:",
+    validate: (value) => {
+      if (!value) {
+        return "invalid input";
+      }
+    },
   });
   validResponse(value);
 
