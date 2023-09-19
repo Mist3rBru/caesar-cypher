@@ -10,11 +10,10 @@ function validResponse<T>(response: T | symbol): asserts response is T {
 function fitAsc(charCode: number): number {
   const lowercaseA = "a".charCodeAt(0);
   const lowercaseZ = "z".charCodeAt(0);
-
   return charCode > lowercaseZ
-    ? charCode - lowercaseZ + lowercaseA
+    ? charCode - lowercaseZ + lowercaseA - 1
     : charCode < lowercaseA
-    ? charCode + lowercaseZ - lowercaseA
+    ? charCode + lowercaseZ - lowercaseA + 1
     : charCode;
 }
 
@@ -37,7 +36,7 @@ async function encrypt(value: string): Promise<void> {
       result += " ";
       continue;
     }
-    const code = fitAsc(value.charCodeAt(i) + Number(key));
+    const code = fitAsc(value.charCodeAt(i) + parseInt(key));
     result += String.fromCharCode(code);
   }
 
